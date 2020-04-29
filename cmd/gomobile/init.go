@@ -329,7 +329,7 @@ func goEnv(name string) string {
 }
 
 func runCmd(cmd *exec.Cmd) error {
-	if buildX || buildN {
+	if buildX || buildN || true {
 		dir := ""
 		if cmd.Dir != "" {
 			dir = "PWD=" + cmd.Dir + " "
@@ -338,6 +338,7 @@ func runCmd(cmd *exec.Cmd) error {
 		if env != "" {
 			env += " "
 		}
+		fmt.Println("Running cmd:")
 		printcmd("%s%s%s", dir, env, strings.Join(cmd.Args, " "))
 	}
 
@@ -363,6 +364,7 @@ func runCmd(cmd *exec.Cmd) error {
 	if !buildN {
 		cmd.Env = environ(cmd.Env)
 		if err := cmd.Run(); err != nil {
+			fmt.Println("\tHere", "Error", 2)
 			return fmt.Errorf("%s failed: %v%s", strings.Join(cmd.Args, " "), err, buf)
 		}
 	}

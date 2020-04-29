@@ -84,7 +84,7 @@ func runBind(cmd *command) error {
 	if bindJavaPkg != "" && targetOS != "android" {
 		return fmt.Errorf("-javapkg is supported only for android target")
 	}
-	if bindPrefix != "" && targetOS != "darwin" {
+	if bindPrefix != "" && !(targetOS == "darwin" || targetOS == "macosx") {
 		return fmt.Errorf("-prefix is supported only for ios target")
 	}
 
@@ -119,6 +119,8 @@ func runBind(cmd *command) error {
 		}
 	}
 
+	fmt.Println(targetOS, targetArchs)
+
 	switch targetOS {
 	case "android":
 		return goAndroidBind(gobind, pkgs, targetArchs)
@@ -127,6 +129,12 @@ func runBind(cmd *command) error {
 			return fmt.Errorf("-target=ios requires XCode")
 		}
 		return goIOSBind(gobind, pkgs, targetArchs)
+	case "macosx":
+		if !xcodeAvailable() {
+			return fmt.Errorf("-target=mac requires XCode")
+		}
+		fmt.Println("Running Mac Bind!")
+		return goMacBind(gobind, pkgs, targetArchs)
 	default:
 		return fmt.Errorf(`invalid -target=%q`, buildTarget)
 	}
@@ -215,7 +223,9 @@ func writeFile(filename string, generate func(io.Writer) error) error {
 func packagesConfig(targetOS string) *packages.Config {
 	config := &packages.Config{}
 	// Add CGO_ENABLED=1 explicitly since Cgo is disabled when GOOS is different from host OS.
-	config.Env = append(os.Environ(), "GOARCH=arm", "GOOS="+targetOS, "CGO_ENABLED=1")
+	if targetOS != "macosx" {
+		config.Env = append(os.Environ(), "GOARCH=arm", "GOOS="+targetOS, "CGO_ENABLED=1")
+	}
 	tags := buildTags
 	if targetOS == "darwin" {
 		tags = append(tags, "ios")

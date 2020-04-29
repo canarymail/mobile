@@ -146,6 +146,25 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 		if err != nil {
 			return nil, err
 		}
+	case "macosx":
+		if !xcodeAvailable() {
+			return nil, fmt.Errorf("-target=mac requires XCode")
+		}
+		if pkg.Name != "main" {
+			for _, arch := range targetArchs {
+				if err := goBuild(pkg.PkgPath, macosxEnv[arch]); err != nil {
+					return nil, err
+				}
+			}
+			return pkg, nil
+		}
+		if buildBundleID == "" {
+			return nil, fmt.Errorf("-target=ios requires -bundleid set")
+		}
+		nmpkgs, err = goIOSBuild(pkg, buildBundleID, targetArchs)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if !nmpkgs["golang.org/x/mobile/app"] {
@@ -338,7 +357,7 @@ func parseBuildTarget(buildTarget string) (os string, archs []string, _ error) {
 	archNames := []string{}
 	for i, p := range strings.Split(buildTarget, ",") {
 		osarch := strings.SplitN(p, "/", 2) // len(osarch) > 0
-		if osarch[0] != "android" && osarch[0] != "ios" {
+		if osarch[0] != "android" && osarch[0] != "ios" && osarch[0] != "mac" {
 			return "", nil, fmt.Errorf(`unsupported os`)
 		}
 
@@ -359,7 +378,7 @@ func parseBuildTarget(buildTarget string) (os string, archs []string, _ error) {
 
 	// verify all archs are supported one while deduping.
 	isSupported := func(arch string) bool {
-		for _, a := range allArchs {
+		for _, a := range allPlatformArchs {
 			if a == arch {
 				return true
 			}
@@ -383,9 +402,17 @@ func parseBuildTarget(buildTarget string) (os string, archs []string, _ error) {
 	targetOS := os
 	if os == "ios" {
 		targetOS = "darwin"
+	} else if os == "mac" {
+		targetOS = "macosx"
+		if all {
+			return targetOS, macArchs, nil
+		} else {
+			return targetOS, archs, nil
+		}
 	}
 	if all {
 		return targetOS, allArchs, nil
+	} else {
+		return targetOS, archs, nil
 	}
-	return targetOS, archs, nil
 }

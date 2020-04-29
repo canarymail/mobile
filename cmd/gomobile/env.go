@@ -16,13 +16,15 @@ var (
 	gomobilepath string // $GOPATH/pkg/gomobile
 
 	androidEnv map[string][]string // android arch -> []string
-
 	darwinEnv map[string][]string
+	macosxEnv map[string][]string
 
 	androidArmNM string
 	darwinArmNM  string
 
+	allPlatformArchs = []string{"arm", "arm64", "386", "amd64"}
 	allArchs = []string{"arm", "arm64", "386", "amd64"}
+	macArchs = []string{"amd64"}
 
 	bitcodeEnabled bool
 )
@@ -167,6 +169,35 @@ func envInit() (err error) {
 			"CGO_ENABLED=1",
 		)
 		darwinEnv[arch] = env
+	}
+
+	macosxEnv = make(map[string][]string)
+	for _, arch := range macArchs {
+		var env []string
+		var err error
+		var clang, cflags string
+		switch arch {
+		case "386", "amd64":
+			clang, cflags, err = envClang("macosx")
+			cflags += " -mmacosx-version-min=10.14"
+		default:
+			panic(fmt.Errorf("unknown GOARCH: %q", arch))
+		}
+		if err != nil {
+			return err
+		}
+
+		env = append(env,
+			"GOOS=darwin",
+			"GOARCH="+arch,
+			"CC="+clang,
+			"CXX="+clang+"++",
+			"CGO_CFLAGS="+cflags+" -arch "+archClang(arch),
+			"CGO_CXXFLAGS="+cflags+" -arch "+archClang(arch),
+			"CGO_LDFLAGS="+cflags+" -arch "+archClang(arch),
+			"CGO_ENABLED=1",
+		)
+		macosxEnv[arch] = env
 	}
 
 	return nil

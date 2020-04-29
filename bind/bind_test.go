@@ -439,7 +439,7 @@ func TestGenGoJavaWrappers(t *testing.T) {
 }
 
 func TestGenGoObjcWrappers(t *testing.T) {
-	if runtime.GOOS != "darwin" {
+	if runtime.GOOS != "darwin" && runtime.GOOS != "macosx" {
 		t.Skipf("can only generate objc wrappers on darwin")
 	}
 	for _, filename := range objcTests {
