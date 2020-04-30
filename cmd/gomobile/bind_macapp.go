@@ -69,10 +69,12 @@ func goMacBind(gobind string, pkgs []*packages.Package, archs []string) error {
 		gopath := fmt.Sprintf("GOPATH=%s%c%s", tmpdir, filepath.ListSeparator, goEnv("GOPATH"))
 		env = append(env, gopath)
 		path, err := goMacBindArchive(name, env, filepath.Join(tmpdir, "src"))
+		fmt.Println("Created static archive: ", path, err)
 		if err != nil {
 			return fmt.Errorf("darwin-%s: %v", arch, err)
 		}
 		cmd.Args = append(cmd.Args, "-arch", archClang(arch), path)
+		runCmd(exec.Command("cp", path, "/Users/Dev/Downloads/"+name+"-"+arch+".a"))
 	}
 
 	// Build static framework output directory.
@@ -185,6 +187,8 @@ var macModuleMapTmpl = template.Must(template.New("macmmap").Parse(`framework mo
 func goMacBindArchive(name string, env []string, gosrc string) (string, error) {
 	arch := getenv(env, "GOARCH")
 	archive := filepath.Join(tmpdir, name+"-"+arch+".a")
+	fmt.Println("====> Creating static library for: ", name, arch)
+	fmt.Println("====> \t", gosrc, env, archive)
 	err := goBuildAt(gosrc, "./gobind", env, "-buildmode=c-archive", "-o", archive)
 	if err != nil {
 		return "", err

@@ -320,9 +320,7 @@ func goCmdAt(at string, subcmd string, srcs []string, env []string, args ...stri
 	if len(tags) > 0 {
 		cmd.Args = append(cmd.Args, "-tags", strings.Join(tags, " "))
 	}
-	if buildV {
-		cmd.Args = append(cmd.Args, "-v")
-	}
+	cmd.Args = append(cmd.Args, "-v")
 	if subcmd != "install" && buildI {
 		cmd.Args = append(cmd.Args, "-i")
 	}
